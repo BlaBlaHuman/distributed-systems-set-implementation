@@ -10,106 +10,120 @@ public class HandOverHandListBasedSet extends AbstractCompositionalIntSet {
     // sentinel nodes
     private Node head;
     private Node tail;
-    private Lock lock = new ReentrantLock();
 
-    public HandOverHandListBasedSet(){
-	  head = new Node(Integer.MIN_VALUE);
-	  tail = new Node(Integer.MAX_VALUE);
-          head.next = tail;
+    public HandOverHandListBasedSet() {
+        head = new Node(Integer.MIN_VALUE);
+        tail = new Node(Integer.MAX_VALUE);
+        head.next = tail;
     }
-    
+
     /*
      * Insert
-     * 
+     *
      * @see contention.abstractions.CompositionalIntSet#addInt(int)
      */
     @Override
-    public boolean addInt(int item){
-         lock.lock(); 
-	 try {  
-	     Node pred = head;
-	     Node curr = head.next;
-	     while (curr.key < item){
-		 pred = curr;
-		 curr = pred.next;
-	     }
-	     if (curr.key == item) {
-		 return false;
-	     } else {
-		 Node node = new Node(item);
-		 node.next=curr;
-		 pred.next=node;
-		 return true;
-	     }
-	 } finally{
-	     lock.unlock();
-	 } 	 
+    public boolean addInt(int item) {
+        head.lock.lock();
+        Node pred = head;
+        try {
+            Node curr = pred.next;
+            curr.lock.lock();
+            while (curr.key < item) {
+                pred.lock.unlock();
+                pred = curr;
+                curr = pred.next;
+                curr.lock.lock();
+            }
+            if (curr.key == item) {
+                return false;
+            } else {
+                Node node = new Node(item);
+                node.next = curr;
+                pred.next = node;
+                return true;
+            }
+        } finally {
+            pred.lock.unlock();
+        }
     }
-    
+
     /*
      * Remove
-     * 
+     *
      * @see contention.abstractions.CompositionalIntSet#removeInt(int)
      */
     @Override
-    public boolean removeInt(int item){
-	lock.lock(); 
-	try {  
-	    Node pred = head;
-	    Node curr = head.next;
-	    while (curr.key < item) {
-		pred = curr;
-		curr = pred.next;
-	    }
-	    if (curr.key == item) {
-		pred.next = curr.next;
-		return true;
-	    } else {
-		return false;
-	    }
-	} finally{
-	    lock.unlock();
-	} 
+    public boolean removeInt(int item) {
+        Node pred = null;
+        Node curr = null;
+        head.lock.lock();
+        try {
+            pred = head;
+            curr = head.next;
+            curr.lock.lock();
+            try {
+                while (curr.key < item) {
+                    pred.lock.unlock();
+                    pred = curr;
+                    curr = pred.next;
+                    curr.lock.lock();
+                }
+                if (curr.key == item) {
+                    pred.next = curr.next;
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            finally {
+                curr.lock.unlock();
+            }
+        } finally {
+            pred.lock.unlock();
+        }
     }
-    
+
     /*
      * Contains
-     * 
+     *
      * @see contention.abstractions.CompositionalIntSet#containsInt(int)
      */
     @Override
-    public boolean containsInt(int item){
-	lock.lock(); 
-	try {
-	    Node pred = head;
-	    Node curr = head.next;
-	    while (curr.key < item) {
-		pred = curr;
-		curr = pred.next;
-	    }
-	    if (curr.key == item){
-		return true;
-	    } else {
-		return false;
-	    }
-        } finally{
-	    lock.unlock();
-	} 
+    public boolean containsInt(int item) {
+        head.lock.lock();
+        Node pred = head;
+        try {
+            Node curr = pred.next;
+            curr.lock.lock();
+            while (curr.key < item) {
+                pred.lock.unlock();
+                pred = curr;
+                curr = pred.next;
+                curr.lock.lock();
+            }
+            return curr.key == item;
+        } finally {
+            pred.lock.unlock();
+        }
     }
- 
+
     private class Node {
-	Node(int item) {
-	    key = item;
-	    next = null;
-	}
-	public int key;
-	public Node next;
+        Node(int item) {
+            key = item;
+            next = null;
+        }
+
+        public Lock lock = new ReentrantLock();
+        public int key;
+        public Node next;
     }
 
     @Override
     public void clear() {
-       head = new Node(Integer.MIN_VALUE);
-       head.next = new Node(Integer.MAX_VALUE);
+        head = new Node(Integer.MIN_VALUE);
+        head.next = new Node(Integer.MAX_VALUE);
+        head.lock.unlock();
     }
 
     /**
