@@ -29,19 +29,24 @@ public class HandOverHandListBasedSet extends AbstractCompositionalIntSet {
         try {
             Node curr = pred.next;
             curr.lock.lock();
-            while (curr.key < item) {
-                pred.lock.unlock();
-                pred = curr;
-                curr = pred.next;
-                curr.lock.lock();
+            try {
+                while (curr.key < item) {
+                    pred.lock.unlock();
+                    pred = curr;
+                    curr = pred.next;
+                    curr.lock.lock();
+                }
+                if (curr.key == item) {
+                    return false;
+                } else {
+                    Node node = new Node(item);
+                    node.next = curr;
+                    pred.next = node;
+                    return true;
+                }
             }
-            if (curr.key == item) {
-                return false;
-            } else {
-                Node node = new Node(item);
-                node.next = curr;
-                pred.next = node;
-                return true;
+            finally {
+                curr.lock.unlock();
             }
         } finally {
             pred.lock.unlock();
@@ -96,13 +101,18 @@ public class HandOverHandListBasedSet extends AbstractCompositionalIntSet {
         try {
             Node curr = pred.next;
             curr.lock.lock();
-            while (curr.key < item) {
-                pred.lock.unlock();
-                pred = curr;
-                curr = pred.next;
-                curr.lock.lock();
+            try {
+                while (curr.key < item) {
+                    pred.lock.unlock();
+                    pred = curr;
+                    curr = pred.next;
+                    curr.lock.lock();
+                }
+                return curr.key == item;
             }
-            return curr.key == item;
+            finally {
+                curr.lock.unlock();
+            }
         } finally {
             pred.lock.unlock();
         }
