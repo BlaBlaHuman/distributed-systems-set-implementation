@@ -121,6 +121,7 @@ public class HandOverHandListBasedSet extends AbstractCompositionalIntSet {
 
     @Override
     public void clear() {
+        head.lock.lock();
         head = new Node(Integer.MIN_VALUE);
         head.next = new Node(Integer.MAX_VALUE);
         head.lock.unlock();
