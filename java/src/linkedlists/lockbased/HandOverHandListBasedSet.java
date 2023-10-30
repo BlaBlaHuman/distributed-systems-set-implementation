@@ -38,12 +38,11 @@ public class HandOverHandListBasedSet extends AbstractCompositionalIntSet {
                 }
                 if (curr.key == item) {
                     return false;
-                } else {
-                    Node node = new Node(item);
-                    node.next = curr;
-                    pred.next = node;
-                    return true;
                 }
+                Node node = new Node(item);
+                node.next = curr;
+                pred.next = node;
+                return true;
             }
             finally {
                 curr.lock.unlock();
@@ -60,12 +59,10 @@ public class HandOverHandListBasedSet extends AbstractCompositionalIntSet {
      */
     @Override
     public boolean removeInt(int item) {
-        Node pred = null;
-        Node curr = null;
         head.lock.lock();
+        Node pred = head;
+        Node curr = head.next;
         try {
-            pred = head;
-            curr = head.next;
             curr.lock.lock();
             try {
                 while (curr.key < item) {
@@ -98,8 +95,8 @@ public class HandOverHandListBasedSet extends AbstractCompositionalIntSet {
     public boolean containsInt(int item) {
         head.lock.lock();
         Node pred = head;
+        Node curr = pred.next;
         try {
-            Node curr = pred.next;
             curr.lock.lock();
             try {
                 while (curr.key < item) {
@@ -131,10 +128,8 @@ public class HandOverHandListBasedSet extends AbstractCompositionalIntSet {
 
     @Override
     public void clear() {
-        head.lock.lock();
         head = new Node(Integer.MIN_VALUE);
         head.next = new Node(Integer.MAX_VALUE);
-        head.lock.unlock();
     }
 
     /**
