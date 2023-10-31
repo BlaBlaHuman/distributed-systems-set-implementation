@@ -3,6 +3,7 @@ import re
 import matplotlib.pyplot as plt
 
 THROUGHPUT_RE = re.compile(r"Throughput \(ops/s\):\s+([.0-9E]+)\s+")
+TOTAL_THROUGHPUT_RE = re.compile(r"Total throughput \(mebiops/s\):\s+([.0-9E]+)\s+")
 
 def get_throughput(algorithm, threads, size, update_ratio):
     command = ["java", "-cp", "bin", "contention.benchmark.Test",
@@ -13,10 +14,11 @@ def get_throughput(algorithm, threads, size, update_ratio):
     command += ["-i", str(size)]
     command += ["-r", str(size * 2)]
     command += ["-u", str(update_ratio)]
+    command += ["-n", "7"]
 
     process = subprocess.run(command, stdout=subprocess.PIPE, encoding="utf8")
     output = process.stdout
-    throughput = float(THROUGHPUT_RE.search(output)[1])
+    throughput = float(TOTAL_THROUGHPUT_RE.search(output)[1]) * (2 ** 20)
 
     return throughput
 
